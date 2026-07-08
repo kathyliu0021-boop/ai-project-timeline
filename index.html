@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI 降量项目 · 上半年阶段复盘</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --blue:   #2563eb;
+  --orange: #ea580c;
+  --green:  #16a34a;
+  --teal:   #0d9488;
+  --bg:     #f0f4f8;
+  --card:   #ffffff;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+  background: var(--bg);
+  color: #1e293b;
+  min-height: 100vh;
+}
+
+/* ── HEADER ── */
+.header {
+  background: linear-gradient(135deg, #1e3a5f 0%, #1e40af 60%, #0369a1 100%);
+  padding: 28px 40px 22px;
+  color: #fff;
+  position: relative;
+}
+.header-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; }
+.header-title { font-size: 26px; font-weight: 700; letter-spacing: .5px; }
+.header-title span { color: #93c5fd; }
+.header-sub { font-size: 13px; color: #bfdbfe; margin-top: 4px; }
+.header-tags { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.htag {
+  padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  background: rgba(255,255,255,.15); color: #fff; cursor: default;
+}
+.htag.accent { background: #2563eb; }
+.goal-bar {
+  margin-top: 16px; background: rgba(255,255,255,.1); border-radius: 8px;
+  padding: 10px 18px; font-size: 13px; color: #e0f2fe;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.goal-label {
+  background: rgba(255,255,255,.2); padding: 2px 10px; border-radius: 4px;
+  font-size: 12px; color: #fff; font-weight: 600; white-space: nowrap;
+}
+.goal-text { flex: 1; min-width: 200px; }
+
+/* editable header fields */
+.header [contenteditable] { outline: none; }
+.header [contenteditable]:focus {
+  background: rgba(255,255,255,.15); border-radius: 4px; outline: 2px solid rgba(255,255,255,.5);
+}
+
+/* ── EDIT CONTROLS ── */
+.edit-bar {
+  background: #fff; border-bottom: 1px solid #e2e8f0;
+  padding: 8px 40px; display: flex; align-items: center; gap: 10px;
+}
+.btn {
+  padding: 6px 16px; border-radius: 6px; font-size: 13px; font-weight: 600;
+  cursor: pointer; border: none; transition: all .15s;
+}
+.btn-edit   { background: #2563eb; color: #fff; }
+.btn-edit:hover { background: #1d4ed8; }
+.btn-save   { background: #16a34a; color: #fff; }
+.btn-save:hover { background: #15803d; }
+.btn-cancel { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+.btn-cancel:hover { background: #e2e8f0; }
+.btn-add-phase { background: #f0fdf4; color: #16a34a; border: 1px solid #86efac; }
+.btn-add-phase:hover { background: #dcfce7; }
+.edit-hint { font-size: 12px; color: #94a3b8; margin-left: 4px; }
+#saveBtn, #cancelBtn, #addPhaseBtn { display: none; }
+
+/* ── TIMELINE WRAPPER ── */
+.timeline-wrap { padding: 32px 40px 48px; max-width: 900px; margin: 0 auto; }
+
+/* ── PHASE CARD ── */
+.phase {
+  display: grid;
+  grid-template-columns: 180px 28px 1fr;
+  gap: 0 0;
+  margin-bottom: 40px;
+  position: relative;
+}
+
+/* vertical line */
+.phase::before {
+  content: '';
+  position: absolute;
+  left: 194px;
+  top: 36px;
+  bottom: -40px;
+  width: 2px;
+  background: #cbd5e1;
+  z-index: 0;
+}
+.phase:last-child::before { display: none; }
+
+/* left col */
+.phase-left {
+  text-align: right;
+  padding-right: 20px;
+  padding-top: 6px;
+}
+.phase-badge {
+  display: inline-block;
+  padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
+  color: #fff; margin-bottom: 8px; letter-spacing: .5px;
+}
+.phase-name {
+  font-size: 18px; font-weight: 700; line-height: 1.3; color: #1e293b;
+}
+.phase-date { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+
+/* dot */
+.phase-dot {
+  width: 18px; height: 18px; border-radius: 50%; border: 3px solid #fff;
+  box-shadow: 0 0 0 2px currentColor;
+  margin-top: 8px; position: relative; z-index: 1; flex-shrink: 0;
+  align-self: start;
+}
+
+/* right col */
+.phase-body {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-left: 16px;
+  box-shadow: 0 1px 6px rgba(0,0,0,.07);
+  border-top: 3px solid currentColor;
+}
+
+/* sections inside body */
+.section-title {
+  font-size: 12px; font-weight: 700; color: #94a3b8;
+  text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
+}
+.bullet-list { list-style: none; margin-bottom: 14px; }
+.bullet-list li {
+  font-size: 13.5px; color: #334155; padding: 3px 0 3px 16px; position: relative; line-height: 1.6;
+}
+.bullet-list li::before {
+  content: '◆'; position: absolute; left: 0; font-size: 7px;
+  top: 7px; color: currentColor; opacity: .6;
+}
+
+/* tags row */
+.tags-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; align-items: center; }
+.tag-label { font-size: 11px; color: #94a3b8; margin-right: 2px; }
+.tag {
+  padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 500;
+  background: #f1f5f9; color: #475569;
+}
+
+/* milestone bar */
+.milestone {
+  border-radius: 8px; padding: 10px 16px; font-size: 13px; font-weight: 600;
+  margin-top: 8px; display: flex; align-items: center; gap: 8px;
+}
+.milestone-icon { font-size: 16px; flex-shrink: 0; }
+
+/* highlight box */
+.highlight-box {
+  border-radius: 8px; padding: 12px 16px; margin-top: 10px;
+  border-left: 4px solid currentColor;
+}
+.highlight-box .hl-title { font-size: 12px; font-weight: 700; margin-bottom: 8px; }
+.highlight-box ul { list-style: none; }
+.highlight-box ul li {
+  font-size: 13px; padding: 2px 0 2px 14px; position: relative; line-height: 1.6;
+}
+.highlight-box ul li::before {
+  content: '▸'; position: absolute; left: 0; top: 2px;
+}
+
+/* data callout */
+.data-callout {
+  border-radius: 8px; padding: 12px 16px; margin-top: 10px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.data-number { font-size: 28px; font-weight: 800; }
+.data-desc { font-size: 12px; line-height: 1.6; }
+
+/* sub-section divider */
+.sub-section { margin-top: 14px; padding-top: 14px; border-top: 1px solid #f1f5f9; }
+
+/* ── EDIT MODE ── */
+body.editing .phase-body [contenteditable] { outline: none; }
+body.editing .phase-body [contenteditable]:focus {
+  background: #f8faff; border-radius: 4px; outline: 2px solid #93c5fd;
+}
+body.editing .bullet-list li { cursor: text; }
+
+/* editable list item controls */
+body.editing .bullet-list li .del-item {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 50%; background: #fee2e2;
+  color: #ef4444; font-size: 11px; cursor: pointer; margin-left: 6px;
+  vertical-align: middle; border: none; line-height: 1;
+}
+.del-item { display: none; }
+
+body.editing .add-item-btn { display: block; }
+.add-item-btn {
+  display: none; margin-top: 4px; font-size: 12px; color: #94a3b8;
+  cursor: pointer; padding: 3px 0 3px 16px; background: none; border: none;
+  text-align: left; width: 100%;
+}
+.add-item-btn:hover { color: #2563eb; }
+
+body.editing .tag { cursor: pointer; }
+body.editing .tag:hover { background: #fee2e2; color: #ef4444; }
+body.editing .add-tag-btn { display: inline-flex; }
+.add-tag-btn {
+  display: none; padding: 3px 10px; border-radius: 20px; font-size: 12px;
+  background: #f0fdf4; color: #16a34a; border: 1px dashed #86efac;
+  cursor: pointer;
+}
+
+body.editing .phase-controls { display: flex; }
+.phase-controls {
+  display: none; gap: 6px; margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #e2e8f0;
+}
+.btn-del-phase { background: #fff0f0; color: #ef4444; border: 1px solid #fca5a5; font-size: 12px; }
+.btn-del-phase:hover { background: #fee2e2; }
+.btn-move { background: #f8faff; color: #2563eb; border: 1px solid #bfdbfe; font-size: 12px; }
+
+/* color picker row */
+body.editing .color-row { display: flex; }
+.color-row {
+  display: none; gap: 6px; margin-bottom: 10px; align-items: center;
+}
+.color-row span { font-size: 12px; color: #94a3b8; }
+.color-dot {
+  width: 20px; height: 20px; border-radius: 50%; cursor: pointer;
+  border: 2px solid transparent; transition: border-color .15s;
+}
+.color-dot:hover, .color-dot.active { border-color: #1e293b; }
+
+/* ── PHASE COLORS ── */
+.c-blue   { color: #2563eb; }
+.c-orange { color: #ea580c; }
+.c-green  { color: #16a34a; }
+.c-teal   { color: #0d9488; }
+.c-purple { color: #7c3aed; }
+.c-red    { color: #dc2626; }
+
+.bg-blue-light   { background: #eff6ff; }
+.bg-orange-light { background: #fff7ed; }
+.bg-green-light  { background: #f0fdf4; }
+.bg-teal-light   { background: #f0fdfa; }
+.bg-purple-light { background: #faf5ff; }
+.bg-red-light    { background: #fff5f5; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 640px) {
+  .header { padding: 20px 20px 16px; }
+  .header-title { font-size: 20px; }
+  .timeline-wrap { padding: 20px 16px 40px; }
+  .phase { grid-template-columns: 120px 22px 1fr; }
+  .phase::before { left: 131px; }
+  .phase-name { font-size: 15px; }
+  .phase-body { padding: 14px 16px; margin-left: 10px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header" id="headerBlock">
+  <div class="header-top">
+    <div>
+      <div class="header-title">
+        <span contenteditable="false" id="hTitle">AI 降量项目</span>
+        &nbsp;·&nbsp;
+        <span contenteditable="false" id="hSubtitle">上半年阶段复盘</span>
+      </div>
+      <div class="header-sub">
+        <span contenteditable="false" id="hMeta">治理服务组 · 2025 年 1 月 — 6 月 · 四阶段推进</span>
+      </div>
+    </div>
+    <div class="header-tags" id="headerTags">
+      <span class="htag" contenteditable="false">4 阶段</span>
+      <span class="htag" contenteditable="false">6 个月</span>
+      <span class="htag" contenteditable="false">5+ 场景</span>
+      <span class="htag accent" contenteditable="false">双轨治理</span>
+    </div>
+  </div>
+  <div class="goal-bar">
+    <span class="goal-label">核心目标</span>
+    <span class="goal-label" style="background:#2563eb;">AI 降量</span>
+    <span class="goal-text" contenteditable="false" id="hGoal">将 AI 能力从单一场景逐步扩展至全场景，构建人审 + 机审双轨治理体系</span>
+  </div>
+</div>
+
+<!-- EDIT BAR -->
+<div class="edit-bar">
+  <button class="btn btn-edit" id="editBtn" onclick="enterEdit()">✏ 编辑</button>
+  <button class="btn btn-save" id="saveBtn" onclick="saveEdit()">✓ 保存</button>
+  <button class="btn btn-cancel" id="cancelBtn" onclick="cancelEdit()">取消</button>
+  <button class="btn btn-add-phase" id="addPhaseBtn" onclick="addPhase()">＋ 添加阶段</button>
+  <span class="edit-hint" id="editHint">点击【编辑】可修改所有内容</span>
+</div>
+
+<!-- TIMELINE -->
+<div class="timeline-wrap" id="timelineWrap">
+
+  <!-- PHASE 01 -->
+  <div class="phase" data-color="blue" id="phase-0">
+    <div class="phase-left">
+      <div class="phase-badge" style="background:#2563eb;" contenteditable="false">PHASE 01</div>
+      <div class="phase-name" contenteditable="false">准备阶段</div>
+      <div class="phase-date" contenteditable="false">2025.01 — 2025.02</div>
+    </div>
+    <div class="phase-dot c-blue" style="color:#2563eb;"></div>
+    <div class="phase-body c-blue" style="border-top-color:#2563eb;">
+      <div class="color-row">
+        <span>颜色：</span>
+        <div class="color-dot" style="background:#2563eb;" data-color="blue" onclick="setPhaseColor(this,'blue','#2563eb')"></div>
+        <div class="color-dot" style="background:#ea580c;" data-color="orange" onclick="setPhaseColor(this,'orange','#ea580c')"></div>
+        <div class="color-dot" style="background:#16a34a;" data-color="green" onclick="setPhaseColor(this,'green','#16a34a')"></div>
+        <div class="color-dot" style="background:#0d9488;" data-color="teal" onclick="setPhaseColor(this,'teal','#0d9488')"></div>
+        <div class="color-dot" style="background:#7c3aed;" data-color="purple" onclick="setPhaseColor(this,'purple','#7c3aed')"></div>
+        <div class="color-dot" style="background:#dc2626;" data-color="red" onclick="setPhaseColor(this,'red','#dc2626')"></div>
+      </div>
+      <div class="section-title">核心工作</div>
+      <ul class="bullet-list" data-list="core">
+        <li><span contenteditable="false">评估生态线上模型效果，<strong>建立质检基线</strong></span><button class="del-item" onclick="delItem(this)">×</button></li>
+        <li><span contenteditable="false">启动时政模型<strong>第一次选型评估</strong></span><button class="del-item" onclick="delItem(this)">×</button></li>
+        <li><span contenteditable="false">持续近 1 个月的<strong>时政模型调优迭代</strong></span><button class="del-item" onclick="delItem(this)">×</button></li>
+        <li><span contenteditable="false">时政规则撰写，与人审口径对齐</span><button class="del-item" onclick="delItem(this)">×</button></li>
+      </ul>
+      <button class="add-item-btn" onclick="addItem(this, 'core')">＋ 添加条目</button>
+      <div class="tags-row">
+        <span class="tag-label">阶段成果</span>
+        <span class="tag" contenteditable="false" onclick="delTagIfEditing(this)">生态模型质检上线</span>
+        <span class="tag" contenteditable="false" onclick="delTagIfEditing(this)">时政模型完成调优</span>
+        <button class="add-tag-btn" onclick="addTag(this)">＋ 标签</button>
+      </div>
+      <div class="milestone bg-blue-light" style="color:#2563eb;">
+        <span class="milestone-icon">🚀</span>
+        <span contenteditable="false">2 月底 · 时政模型全量上线</span>
+      </div>
+      <div class="phase-controls">
+        <button class="btn btn-move" onclick="movePhase(this,-1)">↑ 上移</button>
+        <button class="btn btn-move" onclick="movePhase(this,1)">↓ 下移</button>
+        <button class="btn btn-del-phase" onclick="delPhase(this)">🗑 删除阶段</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE 02 -->
+  <div class="phase" data-color="orange" id="phase-1">
+    <div class="phase-left">
+      <div class="phase-badge" style="background:#ea580c;" contenteditable="false">PHASE 02</div>
+      <div class="phase-name" contenteditable="false">生态扩张<br>& 安保专项</div>
+      <div class="phase-date" contenteditable="false">2025.03 — 2025.04 初</div>
+    </div>
+    <div class="phase-dot" style="color:#ea580c;"></div>
+    <div class="phase-body" style="border-top-color:#ea580c; color:#ea580c;">
+      <div class="color-row">
+        <span>颜色：</span>
+        <div class="color-dot" style="background:#2563eb;" onclick="setPhaseColor(this,'blue','#2563eb')"></div>
+        <div class="color-dot active" style="background:#ea580c;" onclick="setPhaseColor(this,'orange','#ea580c')"></div>
+        <div class="color-dot" style="background:#16a34a;" onclick="setPhaseColor(this,'green','#16a34a')"></div>
+        <div class="color-dot" style="background:#0d9488;" onclick="setPhaseColor(this,'teal','#0d9488')"></div>
+        <div class="color-dot" style="background:#7c3aed;" onclick="setPhaseColor(this,'purple','#7c3aed')"></div>
+        <div class="color-dot" style="background:#dc2626;" onclick="setPhaseColor(this,'red','#dc2626')"></div>
+      </div>
+      <div class="section-title">核心工作</div>
+      <ul class="bullet-list" data-list="core">
+        <li><span contenteditable="false">将时政能力向<strong>帖子生态场景复制</strong></span><button class="del-item" onclick="delItem(this)">×</button></li>
+        <li><span contenteditable="false">美伊事件 · 两会 → 应急/专项模型首次启用</span><button class="del-item" onclick="delItem(this)">×</button></li>
+        <li><span contenteditable="false">安保节点、重大专项开始<strong>接入 AI 审核</strong></span><button class="del-item" onclick="delItem(this)">×</button></li>
+        <li><span contenteditable="false">设计<strong>标签化审核系统架构</strong></span><button class="del-item" onclick="delItem(this)">×</button></li>
+        <li><span contenteditable="false">人审开始培训<strong>标签化审核逻辑</strong></span><button class="del-item" onclick="delItem(this)">×</button></li>
+      </ul>
+      <button class="add-item-btn" onclick="addItem(this, 'core')">＋ 添加条目</button>
+      <div class="tags-row">
+        <span class="tag-label">阶段成果</span>
+        <span class="tag" contenteditable="false" onclick="delTagIfEditing(this)">应急专项模型机制建立</span>
+        <span class="tag" contenteditable="false" onclick="delTagIfEditing(this)">标签化系统设计完成</span>
+        <span class="tag" contenteditable="false" onclick="delTagIfEditing(this)">安保 AI 接入</span>
+        <button class="add-tag-btn" onclick="addTag(this)">＋ 标签</button>
+      </div>
+      <div class="milestone bg-orange-light" style="color:#ea580c;">
+        <span class="milestone-icon">🎯</span>
+        <span contenteditable="false">4 月初 · 帖子生态模型全量上线 & 一审标签化正式启动</span>
+      </div>
+      <div class="phase-controls">
+        <button class="btn btn-move" onclick="movePhase(this,-1)">↑ 上移</button>
+        <button class="btn btn-move" onclick="movePhase(this,1)">↓ 下移</button>
+        <button class="btn btn-del-phase" onclick="delPhase(this)">🗑 删除阶段</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE 03 -->
+  <div class="phase" data-color="green" id="phase-2">
+    <div class="phase-left">
+      <div class="phase-badge" style="background:#16a34a;" contenteditable="false">PHASE 03</div>
+      <div class="phase-name" contenteditable="false">全场景覆盖<br>& 二审闭环</div>
+      <div class="phase-date" contenteditable="false">2025.04 — 2025.05 初</div>
+    </div>
+    <div class="phase-dot" style="color:#16a34a;"></div>
+    <div class="phase-body" style="border-top-color:#16a34a; color:#16a34a;">
+      <div class="color-row">
+        <span>颜色：</span>
+        <div class="color-dot" style="background:#2563eb;" onclick="setPhaseColor(this,'blue','#2563eb')"></div>
+        <div class="color-dot" style="background:#ea580c;" onclick="setPhaseColor(this,'orange','#ea580c')"></div>
+        <div class="color-dot active" style="background:#16a34a;" onclick="setPhaseColor(this,'green','#16a34a')"></div>
+        <div class="color-dot" style="background:#0d9488;" onclick="setPhaseColor(this,'teal','#0d9488')"></div>
+        <div class="color-dot" style="background:#7c3aed;" onclick="setPhaseColor(this,'purple','#7c3aed')"></div>
+        <div class="color-dot" style="background:#dc2626;" onclick="setPhaseColor(this,'red','#dc2626')"></div>
+      </div>
+      <div class="section-title">场景扩张</div>
+      <ul class="bullet-list" data-list="expand">
+        <li><span contenteditable="false">帖子模型能力复制至<strong>评论场景</strong></span><button class="del-item" onclick="delItem(this)">×</button></li>
+        <li><span contenteditable="false">用户信息（昵称、简介、头像）审核模型上线</span><button class="del-item" onclick="delItem(this)">×</button></li>
+        <li><span contenteditable="false">启动<strong>舆情模型</strong>探索与选型评估</span><button class="del-item" onclick="delItem(this)">×</button></li>
+        <li><span contenteditable="false">多场景质检体系同步建立，覆盖评论 + 用户信息</span><button class="del-item" onclick="delItem(this)">×</button></li>
+      </ul>
+      <button class="add-item-btn" onclick="addItem(this, 'expand')">＋ 添加条目</button>
+      <div class="sub-section">
+        <div class="section-title">二审闭环（4 月末启动）</div>
+        <ul class="bullet-list" data-list="review">
+          <li><span contenteditable="false">启动<strong>二审产品设计</strong>与人员培训</span><button class="del-item" onclick="delItem(this)">×</button></li>
+          <li><span contenteditable="false">目标：跑通「模型输出 → 二审准流 → 理由回流」自适代闭环</span><button class="del-item" onclick="delItem(this)">×</button></li>
+          <li><span contenteditable="false">5 月 · 二审产品与人员同步上线，数据开始用于自适代</span><button class="del-item" onclick="delItem(this)">×</button></li>
+        </ul>
+        <button class="add-item-btn" onclick="addItem(this, 'review')">＋ 添加条目</button>
+      </div>
+      <div class="tags-row">
+        <span class="tag-label">阶段成果</span>
+        <span class="tag" contenteditable="false" onclick="delTagIfEditing(this)">评论模型上线</span>
+        <span class="tag" contenteditable="false" onclick="delTagIfEditing(this)">用户信息审核上线</span>
+        <span class="tag" contenteditable="false" onclick="delTagIfEditing(this)">舆情模型完成探索</span>
+        <span class="tag" contenteditable="false" onclick="delTagIfEditing(this)">二审闭环跑通</span>
+        <button class="add-tag-btn" onclick="addTag(this)">＋ 标签</button>
+      </div>
+      <div class="milestone bg-green-light" style="color:#16a34a;">
+        <span class="milestone-icon">✅</span>
+        <span contenteditable="false">5 月初 · 评论、用户信息、舆情模型全量上线 & 二审产品上线</span>
+      </div>
+      <div class="data-callout bg-green-light" style="color:#16a34a; border-left: 4px solid #16a34a;">
+        <div class="data-number" contenteditable="false">↓ 44.3pp</div>
+        <div class="data-desc">
+          <strong contenteditable="false">【政策会议讨论】返伤率下降</strong><br>
+          <span contenteditable="false">线下验证：62.5% → 18.2%，二审自适代闭环初见成效</span>
+        </div>
+      </div>
+      <div class="phase-controls">
+        <button class="btn btn-move" onclick="movePhase(this,-1)">↑ 上移</button>
+        <button class="btn btn-move" onclick="movePhase(this,1)">↓ 下移</button>
+        <button class="btn btn-del-phase" onclick="delPhase(this)">🗑 删除阶段</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE 04 -->
+  <div class="phase" data-color="teal" id="phase-3">
+    <div class="phase-left">
+      <div class="phase-badge" style="background:#0d9488;" contenteditable="false">PHASE 04</div>
+      <div class="phase-name" contenteditable="false">国产化转型</div>
+      <div class="phase-date" contenteditable="false">2025.05 — 2025.06</div>
+    </div>
+    <div class="phase-dot" style="color:#0d9488;"></div>
+    <div class="phase-body" style="border-top-color:#0d9488; color:#0d9488;">
+      <div class="color-row">
+        <span>颜色：</span>
+        <div class="color-dot" style="background:#2563eb;" onclick="setPhaseColor(this,'blue','#2563eb')"></div>
+        <div class="color-dot" style="background:#ea580c;" onclick="setPhaseColor(this,'orange','#ea580c')"></div>
+        <div class="color-dot" style="background:#16a34a;" onclick="setPhaseColor(this,'green','#16a34a')"></div>
+        <div class="color-dot active" style="background:#0d9488;" onclick="setPhaseColor(this,'teal','#0d9488')"></div>
+        <div class="color-dot" style="background:#7c3aed;" onclick="setPhaseColor(this,'purple','#7c3aed')"></div>
+        <div class="color-dot" style="background:#dc2626;" onclick="setPhaseColor(this,'red','#dc2626')"></div>
+      </div>
+      <div class="section-title">核心工作</div>
+      <ul class="bullet-list" data-list="core">
+        <li><span contenteditable="false">数据出境合规风险评估，<strong>启动转型决策</strong></span><button class="del-item" onclick="delItem(this)">×</button></li>
+        <li><span contenteditable="false">国内模型<strong>选型与多轮调试</strong></span><button class="del-item" onclick="delItem(this)">×</button></li>
+        <li><span contenteditable="false">非涉一号场景<strong>逐步切换验收</strong></span><button class="del-item" onclick="delItem(this)">×</button></li>
+      </ul>
+      <button class="add-item-btn" onclick="addItem(this, 'core')">＋ 添加条目</button>
+      <div class="highlight-box bg-orange-light" style="color:#ea580c; border-left-color:#ea580c;">
+        <div class="hl-title" contenteditable="false">⚠ 换型难点</div>
+        <ul>
+          <li><span contenteditable="false">底层触发逻辑差异大，调试周期长</span><button class="del-item" onclick="delItem(this)">×</button></li>
+          <li><span contenteditable="false">输出稳定性与<strong>高敏安全围栏</strong>问题</span><button class="del-item" onclick="delItem(this)">×</button></li>
+          <li><span contenteditable="false">预训练内容较纯净，<strong>泛化能力差异显著</strong></span><button class="del-item" onclick="delItem(this)">×</button></li>
+          <li><span contenteditable="false">涉一号内容：国内模型认知盲区，选型 & 调试周期较长</span><button class="del-item" onclick="delItem(this)">×</button></li>
+        </ul>
+        <button class="add-item-btn" onclick="addItem(this, 'highlight')">＋ 添加条目</button>
+      </div>
+      <div class="tags-row" style="margin-top:14px;">
+        <span class="tag-label">阶段成果</span>
+        <span class="tag" contenteditable="false" onclick="delTagIfEditing(this)">帖子场景完成国产化</span>
+        <span class="tag" style="background:#fef3c7;color:#92400e;" contenteditable="false" onclick="delTagIfEditing(this)">涉一号模型持续攻坚</span>
+        <button class="add-tag-btn" onclick="addTag(this)">＋ 标签</button>
+      </div>
+      <div class="milestone bg-teal-light" style="color:#0d9488;">
+        <span class="milestone-icon">📋</span>
+        <span contenteditable="false">6 月底 · 除涉一号外，帖子模型全量切换国内模型</span>
+      </div>
+      <div class="phase-controls">
+        <button class="btn btn-move" onclick="movePhase(this,-1)">↑ 上移</button>
+        <button class="btn btn-move" onclick="movePhase(this,1)">↓ 下移</button>
+        <button class="btn btn-del-phase" onclick="delPhase(this)">🗑 删除阶段</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end timeline-wrap -->
+
+<script>
+let isEditing = false;
+let snapshot = '';
+
+const COLORS = {
+  blue:   '#2563eb',
+  orange: '#ea580c',
+  green:  '#16a34a',
+  teal:   '#0d9488',
+  purple: '#7c3aed',
+  red:    '#dc2626',
+};
+const BG_COLORS = {
+  blue:   '#eff6ff',
+  orange: '#fff7ed',
+  green:  '#f0fdf4',
+  teal:   '#f0fdfa',
+  purple: '#faf5ff',
+  red:    '#fff5f5',
+};
+
+function enterEdit() {
+  isEditing = true;
+  snapshot = document.getElementById('timelineWrap').innerHTML
+           + '||HEADER||'
+           + document.getElementById('headerBlock').innerHTML;
+  document.body.classList.add('editing');
+  document.getElementById('editBtn').style.display = 'none';
+  document.getElementById('saveBtn').style.display = '';
+  document.getElementById('cancelBtn').style.display = '';
+  document.getElementById('addPhaseBtn').style.display = '';
+  document.getElementById('editHint').textContent = '点击文字直接编辑 · 点击标签删除 · 保存后生效';
+
+  // enable contenteditable on all text nodes
+  document.querySelectorAll('[contenteditable]').forEach(el => {
+    el.contentEditable = 'true';
+  });
+}
+
+function saveEdit() {
+  isEditing = false;
+  document.body.classList.remove('editing');
+  document.getElementById('editBtn').style.display = '';
+  document.getElementById('saveBtn').style.display = 'none';
+  document.getElementById('cancelBtn').style.display = 'none';
+  document.getElementById('addPhaseBtn').style.display = 'none';
+  document.getElementById('editHint').textContent = '点击【编辑】可修改所有内容';
+
+  document.querySelectorAll('[contenteditable]').forEach(el => {
+    el.contentEditable = 'false';
+  });
+  renumberPhases();
+}
+
+function cancelEdit() {
+  const parts = snapshot.split('||HEADER||');
+  document.getElementById('timelineWrap').innerHTML = parts[0];
+  document.getElementById('headerBlock').innerHTML = parts[1];
+  isEditing = false;
+  document.body.classList.remove('editing');
+  document.getElementById('editBtn').style.display = '';
+  document.getElementById('saveBtn').style.display = 'none';
+  document.getElementById('cancelBtn').style.display = 'none';
+  document.getElementById('addPhaseBtn').style.display = 'none';
+  document.getElementById('editHint').textContent = '点击【编辑】可修改所有内容';
+}
+
+function delItem(btn) {
+  btn.closest('li').remove();
+}
+
+function addItem(btn, listName) {
+  const ul = btn.previousElementSibling;
+  if (!ul || ul.tagName !== 'UL') return;
+  const li = document.createElement('li');
+  li.innerHTML = '<span contenteditable="true">新条目</span><button class="del-item" onclick="delItem(this)">×</button>';
+  ul.appendChild(li);
+  li.querySelector('span').focus();
+  // select all text
+  const range = document.createRange();
+  range.selectNodeContents(li.querySelector('span'));
+  window.getSelection().removeAllRanges();
+  window.getSelection().addRange(range);
+}
+
+function delTagIfEditing(el) {
+  if (!isEditing) return;
+  el.remove();
+}
+
+function addTag(btn) {
+  const text = prompt('输入标签名称：');
+  if (!text) return;
+  const tag = document.createElement('span');
+  tag.className = 'tag';
+  tag.contentEditable = 'false';
+  tag.setAttribute('onclick', 'delTagIfEditing(this)');
+  tag.textContent = text;
+  btn.parentElement.insertBefore(tag, btn);
+}
+
+function setPhaseColor(dot, colorKey, hex) {
+  const phase = dot.closest('.phase');
+  const badge = phase.querySelector('.phase-badge');
+  const phaseDot = phase.querySelector('.phase-dot');
+  const body = phase.querySelector('.phase-body');
+  const milestone = phase.querySelector('.milestone');
+  const dataCallout = phase.querySelector('.data-callout');
+
+  badge.style.background = hex;
+  phaseDot.style.color = hex;
+  body.style.borderTopColor = hex;
+  body.style.color = hex;
+  if (milestone) {
+    milestone.style.color = hex;
+    milestone.className = 'milestone bg-' + colorKey + '-light';
+    milestone.style.background = BG_COLORS[colorKey];
+  }
+  if (dataCallout) {
+    dataCallout.style.color = hex;
+    dataCallout.style.borderLeftColor = hex;
+    dataCallout.style.background = BG_COLORS[colorKey];
+  }
+
+  // update active dot
+  dot.closest('.color-row').querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+  dot.classList.add('active');
+  phase.dataset.color = colorKey;
+}
+
+function delPhase(btn) {
+  if (!confirm('确定删除这个阶段？')) return;
+  btn.closest('.phase').remove();
+  renumberPhases();
+}
+
+function movePhase(btn, dir) {
+  const phase = btn.closest('.phase');
+  const wrap = phase.parentElement;
+  const phases = [...wrap.querySelectorAll('.phase')];
+  const idx = phases.indexOf(phase);
+  const target = phases[idx + dir];
+  if (!target) return;
+  if (dir === -1) wrap.insertBefore(phase, target);
+  else wrap.insertBefore(target, phase);
+  renumberPhases();
+}
+
+function renumberPhases() {
+  document.querySelectorAll('.phase').forEach((p, i) => {
+    p.id = 'phase-' + i;
+    const badge = p.querySelector('.phase-badge');
+    if (badge) {
+      const text = badge.textContent.trim();
+      // only renumber if it matches PHASE XX pattern
+      if (/^PHASE\s+\d+$/.test(text)) {
+        badge.textContent = 'PHASE ' + String(i + 1).padStart(2, '0');
+      }
+    }
+  });
+}
+
+function addPhase() {
+  const colors = ['blue','orange','green','teal','purple','red'];
+  const existing = document.querySelectorAll('.phase').length;
+  const colorKey = colors[existing % colors.length];
+  const hex = COLORS[colorKey];
+  const bgHex = BG_COLORS[colorKey];
+  const phaseNum = String(existing + 1).padStart(2, '0');
+
+  const colorDotsHtml = Object.entries(COLORS).map(([k, h]) =>
+    `<div class="color-dot${k === colorKey ? ' active' : ''}" style="background:${h};" onclick="setPhaseColor(this,'${k}','${h}')"></div>`
+  ).join('');
+
+  const div = document.createElement('div');
+  div.className = 'phase';
+  div.dataset.color = colorKey;
+  div.id = 'phase-' + existing;
+  div.innerHTML = `
+    <div class="phase-left">
+      <div class="phase-badge" style="background:${hex};" contenteditable="true">PHASE ${phaseNum}</div>
+      <div class="phase-name" contenteditable="true">新阶段名称</div>
+      <div class="phase-date" contenteditable="true">2025.xx — 2025.xx</div>
+    </div>
+    <div class="phase-dot" style="color:${hex};"></div>
+    <div class="phase-body" style="border-top-color:${hex}; color:${hex};">
+      <div class="color-row" style="display:flex;">
+        <span>颜色：</span>${colorDotsHtml}
+      </div>
+      <div class="section-title">核心工作</div>
+      <ul class="bullet-list" data-list="core">
+        <li><span contenteditable="true">在此输入工作内容</span><button class="del-item" onclick="delItem(this)">×</button></li>
+      </ul>
+      <button class="add-item-btn" style="display:block;" onclick="addItem(this, 'core')">＋ 添加条目</button>
+      <div class="tags-row">
+        <span class="tag-label">阶段成果</span>
+        <button class="add-tag-btn" style="display:inline-flex;" onclick="addTag(this)">＋ 标签</button>
+      </div>
+      <div class="milestone" style="background:${bgHex}; color:${hex};">
+        <span class="milestone-icon">🎯</span>
+        <span contenteditable="true">里程碑描述</span>
+      </div>
+      <div class="phase-controls" style="display:flex;">
+        <button class="btn btn-move" onclick="movePhase(this,-1)">↑ 上移</button>
+        <button class="btn btn-move" onclick="movePhase(this,1)">↓ 下移</button>
+        <button class="btn btn-del-phase" onclick="delPhase(this)">🗑 删除阶段</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('timelineWrap').appendChild(div);
+}
+</script>
+</body>
+</html>
